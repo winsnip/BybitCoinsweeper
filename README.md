@@ -1,4 +1,4 @@
-***BybitCoinsweeper BINANCE***
+***BybitCoinsweeper BYBIT***
 
 1.) Siapin kopi 1 gelas
 
