@@ -25,6 +25,7 @@ class ByBit:
             "Content-Type": "application/json",
             "Origin": "https://bybitcoinsweeper.com",
             "Referer": "https://bybitcoinsweeper.com/",
+            "tl-init-data": None,
             "Sec-Ch-Ua": '"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
             "Sec-Ch-Ua-Mobile": "?1",
             "Sec-Ch-Ua-Platform": '"Android"',
@@ -54,16 +55,11 @@ class ByBit:
         sys.stdout.write("\r")
         sys.stdout.flush()
 
-    def login(self, user_data):
+    def login(self, init_data):
         url = "https://api.bybitcoinsweeper.com/api/auth/login"
-        payload = {
-            "firstName": user_data["first_name"],
-            "lastName": user_data.get("last_name", ""),
-            "telegramId": str(user_data["id"]),
-            "userName": user_data["username"]
-        }
-
+        payload = {"initData": init_data}
         try:
+            self.headers = { "tl-init-data": init_data}
             response = self.session.post(url, json=payload, headers=self.headers)
             if response.status_code == 201:
                 data = response.json()
@@ -92,9 +88,7 @@ class ByBit:
                     'gameTime': gametime,
                     'score': score
                 }
-
                 res = self.session.patch('https://api.bybitcoinsweeper.com/api/users/score', json=game_data, headers=self.headers)
-
                 if res.status_code == 200:
                     self.info["score"] += score
                     self.log(f"Game Played Successfully: received {score} points | Total: {self.info['score']}","SUCCESS")
@@ -128,7 +122,7 @@ class ByBit:
                 user_data = json.loads(finaldat.split('user=')[1].split('&')[0])
                 self.log(f"========== Account {i + 1} | {user_data['first_name']} ==========", 'INFO')
                 self.log(f"self.logging into account {user_data['id']}...", 'INFO')
-                login_result = self.login(user_data)
+                login_result = self.login(init_data)
                 if login_result["success"]:
                     self.log('login successful!', "SUCCESS")
                     game_result = self.score()
