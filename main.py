@@ -56,11 +56,9 @@ class ByBit:
         sys.stdout.flush()
 
     def login(self, init_data):
-        url = "https://api.bybitcoinsweeper.com/api/auth/login"
-        payload = {"initData": init_data}
         try:
             self.headers = { "tl-init-data": init_data}
-            response = self.session.post(url, json=payload, headers=self.headers)
+            response = self.session.post("https://api.bybitcoinsweeper.com/api/auth/login", json={"initData": init_data}, headers=self.headers)
             if response.status_code == 201:
                 data = response.json()
                 self.headers['Authorization'] = f"Bearer {data['accessToken']}"
@@ -75,21 +73,27 @@ class ByBit:
         except requests.RequestException as error:
             return {"success": False, "error": str(error)}
 
+
     def score(self):
         for i in range(3):
             try:
                 gametime = int(time.time()) % 211 + 90
                 score = int(time.time()) % 301 + 600
-
+                playgame = self.session.post("https://api.bybitcoinsweeper.com/api/games/start", json={}, headers=self.headers).json()
+                gameid = playgame["id"]
+                rewarddata = playgame["rewards"]
                 self.log(f"Starting game {i + 1}/3. Play time: {gametime} seconds", 'INFO')
                 self.wait(gametime)
-
                 game_data = {
+                    "bagCoins": rewarddata["bagCoins"],
+                    "bits": rewarddata["bits"],
+                    "gifts": rewarddata["gifts"],
+                    "gameId": gameid,
                     'gameTime': gametime,
                     'score': score
                 }
-                res = self.session.patch('https://api.bybitcoinsweeper.com/api/users/score', json=game_data, headers=self.headers)
-                if res.status_code == 200:
+                res = self.session.post('https://api.bybitcoinsweeper.com/api/games/win', json=game_data, headers=self.headers)
+                if res.status_code == 201:
                     self.info["score"] += score
                     self.log(f"Game Played Successfully: received {score} points | Total: {self.info['score']}","SUCCESS")
                 elif res.status_code == 401:
