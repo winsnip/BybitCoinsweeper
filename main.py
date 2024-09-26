@@ -1,4 +1,4 @@
-import os, json, time, requests, crayons, sys, re, hmac, hashlib, random
+import os, json, time, requests, crayons, sys, re, hmac, hashlib, random, math
 from datetime import datetime
 import urllib.parse
 
@@ -9,6 +9,13 @@ def generate_hash(key, message):
 
 def url_decode(encoded_url):
     return urllib.parse.unquote(encoded_url)
+
+def value(input_str):
+    return sum(ord(char) for char in input_str) / 1e5
+
+def calculate(i, game_time, game_id):
+    result = math.floor(10 * value(i) + max(0, 1200 - 10 * game_time) + 2000) * (1 + 9 / 54)
+    return math.floor(result) / 10 + value(game_id)
 
 def print_banner():
     print(crayons.blue('██     ██ ██ ███    ██ ███████ ███    ██ ██ ██████  '))
@@ -85,9 +92,6 @@ class ByBit:
                 min_game_time = 60
                 max_game_time = 180
                 game_time = random.randint(min_game_time, max_game_time)
-                min_score = 100
-                max_score = 500
-                score = round(random.uniform(min_score, max_score), 5)
                 starttime = int(time.time() * 1000)
                 playgame = self.session.post("https://api.bybitcoinsweeper.com/api/games/start", json={}, headers=self.headers).json()
                 if "message" in playgame:
@@ -98,8 +102,10 @@ class ByBit:
                 rewarddata = playgame["rewards"]
                 self.log(f"Starting game {i + 1}/3. Play time: {game_time} seconds", 'INFO')
                 self.wait(game_time)
-                first = f"66f259c3bc25ac58ea3605fcv$2f1-{gameid}-{starttime}"
+                i = "66f259c3bc25ac58ea3605fcv$2f1"
+                first = f"{i}-{gameid}-{starttime}"
                 last = f"{game_time}-{gameid}"
+                score = calculate(i, game_time, gameid)
                 #66f56e0c335b39ab5102f60av$2f1
                 #66f259c3bc25ac58ea3605fcv$2f1
                 game_data = {
@@ -109,7 +115,7 @@ class ByBit:
                     "gameId": gameid,
                     'gameTime': game_time,
                     "h": generate_hash(first ,last),
-                    'score': score
+                    'score': float(score)
                 }
                 res = self.session.post('https://api.bybitcoinsweeper.com/api/games/win', json=game_data, headers=self.headers)
                 print(res.text)
