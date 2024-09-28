@@ -1,4 +1,4 @@
-import os, json, time, requests, crayons, sys, re, hmac, hashlib, random, math
+import os, json, time, requests, crayons, sys, re, hmac, hashlib, random, pytz
 from datetime import datetime
 import urllib.parse
 
@@ -12,10 +12,6 @@ def url_decode(encoded_url):
 
 def value(input_str):
     return sum(ord(char) for char in input_str) / 1e5
-
-def calculate(i, game_time, game_id):
-    result = math.floor(10 * value(i) + max(0, 1200 - 10 * game_time) + 2000) * (1 + 9 / 54)
-    return math.floor(result) / 10 + value(game_id)
 
 def print_banner():
     print(crayons.blue('██     ██ ██ ███    ██ ███████ ███    ██ ██ ██████  '))
@@ -84,15 +80,21 @@ class ByBit:
                 return {"success": False, "error": "Unexpected status code"}
         except requests.RequestException as error:
             return {"success": False, "error": str(error)}
+        
+    def userinfo(self):
+        try:
+            user = self.session.get("https://api.bybitcoinsweeper.com/api/users/me", headers=self.headers).json()
+            return user["id"]
+        except requests.RequestException as error:
+            return {"success": False, "error": str(error)}        
 
 
     def score(self):
         for i in range(3):
             try:
-                min_game_time = 60
+                min_game_time = 130
                 max_game_time = 180
                 game_time = random.randint(min_game_time, max_game_time)
-                starttime = int(time.time() * 1000)
                 playgame = self.session.post("https://api.bybitcoinsweeper.com/api/games/start", json={}, headers=self.headers).json()
                 if "message" in playgame:
                     if("expired" in playgame["message"]):
@@ -100,14 +102,16 @@ class ByBit:
                         sys.exit(0)
                 gameid = playgame["id"]
                 rewarddata = playgame["rewards"]
+                started_at = playgame["createdAt"]
+                unix_time_started = datetime.strptime(started_at, '%Y-%m-%dT%H:%M:%S.%fZ')
+                unix_time_started = unix_time_started.replace(tzinfo=pytz.UTC)
+                starttime = int(unix_time_started.timestamp() * 1000)
                 self.log(f"Starting game {i + 1}/3. Play time: {game_time} seconds", 'INFO')
                 self.wait(game_time)
-                i = "66f259c3bc25ac58ea3605fcv$2f1"
+                i = f"{self.userinfo()}v$2f1"
                 first = f"{i}-{gameid}-{starttime}"
                 last = f"{game_time}-{gameid}"
-                score = calculate(i, game_time, gameid)
-                #66f56e0c335b39ab5102f60av$2f1
-                #66f259c3bc25ac58ea3605fcv$2f1
+                score = round(random.uniform(285.01, 285.03), 5)
                 game_data = {
                     "bagCoins": rewarddata["bagCoins"],
                     "bits": rewarddata["bits"],
