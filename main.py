@@ -155,7 +155,7 @@ class ByBit:
                 rewarddata = playgame["rewards"]
                 started_at = playgame["createdAt"]
                 userdata = self.userinfo()
-                self.log(f"Total Score: {userdata['score']+userdata['scoreFromReferrals']}","SUCCESS")
+                self.log(f"Total Score: {userdata['score']}","SUCCESS")
                 unix_time_started = datetime.strptime(started_at, '%Y-%m-%dT%H:%M:%S.%fZ')
                 unix_time_started = unix_time_started.replace(tzinfo=pytz.UTC)
                 self.log(f"Starting game {gameid}. Play time: {game_time} seconds", 'INFO')
