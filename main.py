@@ -93,11 +93,10 @@ class ByBit:
             return {"success": False, "error": str(error)}        
 
 
-    def score(self):
-        for i in range(3):
+    def score_win(self):
             try:
-                min_game_time = 50
-                max_game_time = 90
+                min_game_time = 70
+                max_game_time = 120
                 game_time = random.randint(min_game_time, max_game_time)
                 playgame = self.session.post("https://api.bybitcoinsweeper.com/api/games/start", json={}, headers=self.headers).json()
                 if "message" in playgame:
@@ -112,7 +111,7 @@ class ByBit:
                 unix_time_started = datetime.strptime(started_at, '%Y-%m-%dT%H:%M:%S.%fZ')
                 unix_time_started = unix_time_started.replace(tzinfo=pytz.UTC)
                 starttime = int(unix_time_started.timestamp() * 1000)
-                self.log(f"Starting game {i + 1}/3. Play time: {game_time} seconds", 'INFO')
+                self.log(f"Starting game {gameid}. Play time: {game_time} seconds", 'INFO')
                 self.wait(game_time)
                 i = f"{userdata['id']}v$2f1"
                 first = f"{i}-{gameid}-{starttime}"
@@ -128,10 +127,9 @@ class ByBit:
                     'score': float(score)
                 }
                 res = self.session.post('https://api.bybitcoinsweeper.com/api/games/win', json=game_data, headers=self.headers)
-                print(res.text)
                 if res.status_code == 201:
                     self.info["score"] += score
-                    self.log(f"Game Played Successfully","SUCCESS")
+                    self.log(f"Game Status: WIN","SUCCESS")
                 elif res.status_code == 401:
                     self.log('Token expired, need to self.log in again', "ERROR")
                     return False
@@ -141,7 +139,59 @@ class ByBit:
             except requests.RequestException:
                 self.log('Too Many Requests, Please Wait', 'WARNING')
                 self.wait(60)
+    
+
+    def score_lose(self):
+            try:
+                min_game_time = 70
+                max_game_time = 120
+                game_time = random.randint(min_game_time, max_game_time)
+                playgame = self.session.post("https://api.bybitcoinsweeper.com/api/games/start", json={}, headers=self.headers).json()
+                if "message" in playgame:
+                    if("expired" in playgame["message"]):
+                        self.log("Query Expired Sir", "ERROR")
+                        sys.exit(0)
+                gameid = playgame["id"]
+                rewarddata = playgame["rewards"]
+                started_at = playgame["createdAt"]
+                userdata = self.userinfo()
+                self.log(f"Total Score: {userdata['score']+userdata['scoreFromReferrals']}","SUCCESS")
+                unix_time_started = datetime.strptime(started_at, '%Y-%m-%dT%H:%M:%S.%fZ')
+                unix_time_started = unix_time_started.replace(tzinfo=pytz.UTC)
+                self.log(f"Starting game {gameid}. Play time: {game_time} seconds", 'INFO')
+                self.wait(game_time)
+                game_data = {
+                    "bagCoins": rewarddata["bagCoins"],
+                    "bits": rewarddata["bits"],
+                    "gifts": rewarddata["gifts"],
+                    "gameId": gameid
+                }
+                res = self.session.post('https://api.bybitcoinsweeper.com/api/games/lose', json=game_data, headers=self.headers)
+                if res.status_code == 201:
+                    self.log(f"Game Status: LOSEEEEEEEE","ERROR")
+                elif res.status_code == 401:
+                    self.log('Token expired, need to self.log in again', "ERROR")
+                    return False
+                else:
+                    self.log(f"An Error Occurred With Code {res.status_code}", 'ERROR')
+                self.wait(5)
+            except requests.RequestException:
+                self.log('Too Many Requests, Please Wait', 'WARNING')
+                self.wait(60)
+    
+    def score(self):
+        for i in range(3):
+            try:
+                is_win = random.random() < float(0.8)
+                if(is_win):
+                    self.score_win()
+                else:
+                    self.score_lose()
+            except Exception as e:
+                print(e)
         return True
+                
+
 
     def main(self):
         os.system('cls' if os.name == 'nt' else 'clear')
